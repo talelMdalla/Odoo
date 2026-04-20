@@ -1,0 +1,1202 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Odoo 17 – Module Vente | Cours Complet</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap');
+
+  :root {
+    --odoo-purple: #714B67;
+    --odoo-dark: #1a1a2e;
+    --odoo-blue: #017e84;
+    --odoo-green: #28a745;
+    --odoo-orange: #f39c12;
+    --odoo-red: #e74c3c;
+    --odoo-light: #f8f9fa;
+    --accent1: #7c3aed;
+    --accent2: #0ea5e9;
+    --glass: rgba(255,255,255,0.08);
+    --glass-border: rgba(255,255,255,0.15);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #0d0d1a;
+    color: #fff;
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+  }
+
+  /* ── SLIDE CONTAINER ── */
+  .presentation {
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+  }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 40px 60px;
+    opacity: 0;
+    transform: translateX(80px);
+    transition: opacity .55s cubic-bezier(.4,0,.2,1), transform .55s cubic-bezier(.4,0,.2,1);
+    pointer-events: none;
+    overflow: hidden;
+  }
+  .slide.active {
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: all;
+  }
+  .slide.exit {
+    opacity: 0;
+    transform: translateX(-80px);
+    pointer-events: none;
+  }
+
+  /* ── ANIMATED BACKGROUND ── */
+  .bg-anim {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+  }
+  .bg-anim::before {
+    content: '';
+    position: absolute;
+    width: 600px; height: 600px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(113,75,103,0.35) 0%, transparent 70%);
+    top: -100px; left: -100px;
+    animation: blob1 12s ease-in-out infinite;
+  }
+  .bg-anim::after {
+    content: '';
+    position: absolute;
+    width: 500px; height: 500px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(14,165,233,0.25) 0%, transparent 70%);
+    bottom: -80px; right: -80px;
+    animation: blob2 15s ease-in-out infinite;
+  }
+  @keyframes blob1 { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(80px,60px) scale(1.15)} }
+  @keyframes blob2 { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(-60px,-40px) scale(1.1)} }
+
+  /* ── PROGRESS BAR ── */
+  #progress-bar {
+    position: fixed;
+    top: 0; left: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--odoo-purple), var(--accent2));
+    transition: width .4s ease;
+    z-index: 999;
+    box-shadow: 0 0 12px rgba(113,75,103,.8);
+  }
+
+  /* ── SLIDE COUNTER ── */
+  #slide-counter {
+    position: fixed;
+    bottom: 24px; right: 30px;
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.45);
+    z-index: 999;
+    letter-spacing: 1px;
+  }
+
+  /* ── NAV BUTTONS ── */
+  .nav-btn {
+    position: fixed;
+    bottom: 20px;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    color: #fff;
+    padding: 10px 24px;
+    border-radius: 50px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    backdrop-filter: blur(10px);
+    transition: all .25s;
+    z-index: 999;
+    letter-spacing: .5px;
+  }
+  .nav-btn:hover { background: rgba(255,255,255,0.18); transform: translateY(-2px); }
+  #btn-prev { left: 30px; }
+  #btn-next { left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, var(--odoo-purple), var(--accent1)); border: none; box-shadow: 0 4px 20px rgba(113,75,103,.5); }
+  #btn-next:hover { transform: translateX(-50%) translateY(-2px); box-shadow: 0 8px 30px rgba(113,75,103,.7); }
+
+  /* ── SLIDE DOTS ── */
+  #dots {
+    position: fixed;
+    top: 20px; left: 50%;
+    transform: translateX(-50%);
+    display: flex; gap: 8px;
+    z-index: 999;
+  }
+  .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.25);
+    cursor: pointer;
+    transition: all .3s;
+  }
+  .dot.active { background: var(--odoo-purple); transform: scale(1.4); box-shadow: 0 0 8px var(--odoo-purple); }
+
+  /* ── TYPOGRAPHY ── */
+  .slide-title {
+    font-size: 2.8rem;
+    font-weight: 800;
+    line-height: 1.15;
+    text-align: center;
+    margin-bottom: 12px;
+    background: linear-gradient(135deg, #fff 30%, rgba(255,255,255,0.6));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .slide-subtitle {
+    font-size: 1.1rem;
+    color: rgba(255,255,255,0.55);
+    text-align: center;
+    font-weight: 400;
+    margin-bottom: 32px;
+  }
+  .section-label {
+    font-size: .7rem;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--odoo-purple);
+    margin-bottom: 10px;
+    text-align: center;
+  }
+
+  /* ── GLASS CARD ── */
+  .card {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 28px 32px;
+    backdrop-filter: blur(14px);
+    transition: transform .3s, box-shadow .3s;
+  }
+  .card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(0,0,0,0.4); }
+
+  /* ── GRID LAYOUTS ── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%; max-width: 960px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; width: 100%; max-width: 980px; }
+  .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 14px; width: 100%; max-width: 960px; }
+
+  /* ── FEATURE CARD ── */
+  .feat-card {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 22px 20px;
+    backdrop-filter: blur(12px);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: transform .3s, box-shadow .3s, border-color .3s;
+  }
+  .feat-card:hover { transform: translateY(-5px); border-color: var(--odoo-purple); box-shadow: 0 10px 40px rgba(113,75,103,.35); }
+  .feat-icon { font-size: 2rem; }
+  .feat-title { font-size: .95rem; font-weight: 700; color: #fff; }
+  .feat-desc { font-size: .8rem; color: rgba(255,255,255,0.55); line-height: 1.5; }
+
+  /* ── STEP / WORKFLOW ── */
+  .workflow {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    width: 100%;
+    max-width: 900px;
+    flex-wrap: nowrap;
+  }
+  .step {
+    flex: 1;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 14px;
+    padding: 18px 14px;
+    text-align: center;
+    backdrop-filter: blur(10px);
+    position: relative;
+    transition: transform .3s, border-color .3s;
+  }
+  .step:hover { transform: translateY(-4px); border-color: var(--accent2); }
+  .step-num {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--odoo-purple), var(--accent1));
+    display: flex; align-items: center; justify-content: center;
+    font-size: .75rem; font-weight: 800;
+    margin: 0 auto 10px;
+    box-shadow: 0 4px 14px rgba(113,75,103,.5);
+  }
+  .step-title { font-size: .8rem; font-weight: 700; margin-bottom: 5px; }
+  .step-desc { font-size: .7rem; color: rgba(255,255,255,0.5); line-height: 1.4; }
+  .arrow {
+    font-size: 1.3rem;
+    color: var(--odoo-purple);
+    padding: 0 6px;
+    flex-shrink: 0;
+  }
+
+  /* ── BADGE ── */
+  .badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 50px;
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .5px;
+  }
+  .badge-purple { background: rgba(113,75,103,.3); color: #c084cc; border: 1px solid rgba(192,132,204,.3); }
+  .badge-blue { background: rgba(14,165,233,.2); color: #7dd3fc; border: 1px solid rgba(125,211,252,.3); }
+  .badge-green { background: rgba(40,167,69,.2); color: #6ee7b7; border: 1px solid rgba(110,231,183,.3); }
+  .badge-orange { background: rgba(243,156,18,.2); color: #fcd34d; border: 1px solid rgba(252,211,77,.3); }
+
+  /* ── MOCKUP SCREEN ── */
+  .mock-screen {
+    background: #0f0f1e;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    width: 100%;
+    max-width: 640px;
+  }
+  .mock-topbar {
+    background: #1a1a2e;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .mock-dots { display: flex; gap: 6px; }
+  .mock-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .mock-url {
+    flex: 1;
+    background: rgba(255,255,255,0.07);
+    border-radius: 6px;
+    padding: 5px 12px;
+    font-size: .7rem;
+    color: rgba(255,255,255,0.4);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .mock-body { padding: 16px; }
+  .mock-nav {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+  .mock-nav-item {
+    padding: 5px 14px;
+    border-radius: 8px;
+    font-size: .72rem;
+    font-weight: 600;
+    background: rgba(255,255,255,0.06);
+    color: rgba(255,255,255,0.5);
+    cursor: pointer;
+    transition: all .2s;
+  }
+  .mock-nav-item.active { background: var(--odoo-purple); color: #fff; }
+  .mock-table { width: 100%; border-collapse: collapse; }
+  .mock-table th {
+    font-size: .65rem;
+    font-weight: 600;
+    color: rgba(255,255,255,0.35);
+    text-align: left;
+    padding: 6px 8px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .mock-table td {
+    font-size: .72rem;
+    padding: 8px 8px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    color: rgba(255,255,255,0.75);
+  }
+  .status-badge {
+    padding: 2px 8px;
+    border-radius: 50px;
+    font-size: .65rem;
+    font-weight: 700;
+  }
+  .s-confirmed { background: rgba(40,167,69,.25); color: #6ee7b7; }
+  .s-draft { background: rgba(243,156,18,.2); color: #fcd34d; }
+  .s-done { background: rgba(14,165,233,.2); color: #7dd3fc; }
+  .s-cancel { background: rgba(231,76,60,.2); color: #fca5a5; }
+
+  /* ── STAT CARDS ── */
+  .stat-card {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 22px 20px;
+    backdrop-filter: blur(12px);
+    text-align: center;
+    transition: transform .3s;
+  }
+  .stat-card:hover { transform: translateY(-4px); }
+  .stat-num { font-size: 2.2rem; font-weight: 900; background: linear-gradient(135deg, var(--odoo-purple), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .stat-label { font-size: .75rem; color: rgba(255,255,255,0.5); margin-top: 5px; font-weight: 500; }
+
+  /* ── INTEGRATION BADGE ── */
+  .int-card {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 14px;
+    padding: 16px;
+    text-align: center;
+    backdrop-filter: blur(10px);
+    transition: transform .3s, border-color .3s;
+  }
+  .int-card:hover { transform: scale(1.05); border-color: var(--accent2); }
+  .int-icon { font-size: 1.8rem; margin-bottom: 8px; }
+  .int-name { font-size: .78rem; font-weight: 700; color: rgba(255,255,255,0.8); }
+
+  /* ── TABLE ── */
+  .info-table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+  .info-table th { background: rgba(113,75,103,.3); padding: 10px 14px; text-align: left; font-weight: 700; font-size: .75rem; text-transform: uppercase; letter-spacing: 1px; color: #c084cc; }
+  .info-table td { padding: 10px 14px; border-bottom: 1px solid rgba(255,255,255,0.06); color: rgba(255,255,255,0.8); }
+  .info-table tr:hover td { background: rgba(255,255,255,0.04); }
+
+  /* ── LIST ── */
+  .styled-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+  .styled-list li {
+    display: flex; align-items: flex-start; gap: 10px;
+    font-size: .88rem; color: rgba(255,255,255,0.8); line-height: 1.5;
+  }
+  .styled-list li::before {
+    content: '▸';
+    color: var(--odoo-purple);
+    font-size: .9rem;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  /* ── QUOTE CALLOUT ── */
+  .callout {
+    background: linear-gradient(135deg, rgba(113,75,103,.25), rgba(14,165,233,.15));
+    border-left: 3px solid var(--odoo-purple);
+    border-radius: 0 12px 12px 0;
+    padding: 16px 20px;
+    font-size: .9rem;
+    color: rgba(255,255,255,0.85);
+    line-height: 1.6;
+    width: 100%;
+    max-width: 780px;
+  }
+
+  /* ── HERO TITLE SLIDE ── */
+  .hero-logo {
+    width: 80px; height: 80px;
+    background: linear-gradient(135deg, var(--odoo-purple), var(--accent1));
+    border-radius: 24px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2.5rem;
+    margin-bottom: 24px;
+    box-shadow: 0 8px 40px rgba(113,75,103,.6);
+    animation: float 3s ease-in-out infinite;
+  }
+  @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+
+  .hero-big {
+    font-size: 3.8rem;
+    font-weight: 900;
+    background: linear-gradient(135deg, #fff 0%, rgba(113,75,103,1) 50%, var(--accent2) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-align: center;
+    line-height: 1.1;
+    margin-bottom: 16px;
+  }
+
+  .pill-row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 20px; }
+  .pill {
+    padding: 7px 18px;
+    border-radius: 50px;
+    font-size: .78rem;
+    font-weight: 600;
+    border: 1px solid var(--glass-border);
+    background: var(--glass);
+    backdrop-filter: blur(8px);
+  }
+
+  /* ── KANBAN MOCK ── */
+  .kanban { display: flex; gap: 12px; width: 100%; max-width: 800px; }
+  .kanban-col {
+    flex: 1;
+    background: rgba(255,255,255,0.05);
+    border-radius: 12px;
+    padding: 12px;
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .kanban-header {
+    font-size: .7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .kanban-card {
+    background: rgba(255,255,255,0.07);
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 8px;
+    font-size: .72rem;
+    border: 1px solid rgba(255,255,255,0.08);
+    transition: transform .2s;
+  }
+  .kanban-card:hover { transform: scale(1.02); }
+  .kanban-client { font-weight: 600; margin-bottom: 3px; }
+  .kanban-amount { color: rgba(255,255,255,0.5); font-size: .68rem; }
+
+  /* ── ANIMATION HELPERS ── */
+  .fade-up { animation: fadeUp .5s ease both; }
+  .fade-up-d1 { animation: fadeUp .5s .1s ease both; }
+  .fade-up-d2 { animation: fadeUp .5s .2s ease both; }
+  .fade-up-d3 { animation: fadeUp .5s .3s ease both; }
+  .fade-up-d4 { animation: fadeUp .5s .4s ease both; }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+
+  /* ── SLIDE SPECIFIC BG TINTS ── */
+  .tint-purple { background: radial-gradient(ellipse at top left, rgba(113,75,103,0.2) 0%, transparent 60%); }
+  .tint-blue { background: radial-gradient(ellipse at bottom right, rgba(14,165,233,0.15) 0%, transparent 60%); }
+  .tint-green { background: radial-gradient(ellipse at top right, rgba(40,167,69,0.15) 0%, transparent 60%); }
+  .tint-orange { background: radial-gradient(ellipse at bottom left, rgba(243,156,18,0.15) 0%, transparent 60%); }
+
+  /* Full-height tint overlay per slide */
+  .slide-tint {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+  }
+  .slide > *:not(.slide-tint) { position: relative; z-index: 1; }
+</style>
+</head>
+<body>
+
+<div class="bg-anim"></div>
+<div id="progress-bar" style="width:0%"></div>
+<div id="dots"></div>
+<div id="slide-counter">01 / 12</div>
+
+<button class="nav-btn" id="btn-prev">← Précédent</button>
+<button class="nav-btn" id="btn-next">Suivant →</button>
+
+<div class="presentation" id="presentation">
+
+  <!-- ══════════════════════════════════════════
+       SLIDE 1 — COVER
+  ══════════════════════════════════════════ -->
+  <div class="slide active" id="slide-1">
+    <div class="slide-tint tint-purple"></div>
+    <div class="hero-logo fade-up">🛒</div>
+    <div class="hero-big fade-up-d1">Module Vente<br>Odoo 17</div>
+    <p class="slide-subtitle fade-up-d2" style="font-size:1.05rem;">Cours Complet · De la Devis à la Facturation</p>
+    <div class="pill-row fade-up-d3">
+      <span class="pill">📋 Devis & Commandes</span>
+      <span class="pill">💰 Tarification Avancée</span>
+      <span class="pill">📦 Produits & Catalogue</span>
+      <span class="pill">📊 Rapports & Analyses</span>
+      <span class="pill">🔗 Intégrations</span>
+    </div>
+    <p style="margin-top:32px;font-size:.78rem;color:rgba(255,255,255,0.3);letter-spacing:1px;" class="fade-up-d4">ODOO 17 ENTERPRISE & COMMUNITY</p>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       SLIDE 2 — PLAN DU COURS
+  ══════════════════════════════════════════ -->
+  <div class="slide" id="slide-2">
+    <div class="slide-tint tint-blue"></div>
+    <p class="section-label fade-up">Table des Matières</p>
+    <h2 class="slide-title fade-up-d1">Plan du Cours</h2>
+    <div class="grid-2 fade-up-d2" style="max-width:800px;">
+      <div class="feat-card">
+        <span class="feat-icon">1️⃣</span>
+        <div class="feat-title">Introduction au Module Vente</div>
+        <div class="feat-desc">Présentation de l'interface, menus principaux et configuration initiale</div>
+      </div>
+      <div class="feat-card">
+        <span class="feat-icon">2️⃣</span>
+        <div class="feat-title">Devis & Commandes de Vente</div>
+        <div class="feat-desc">Création, validation, envoi et conversion des devis en commandes</div>
+      </div>
+      <div class="feat-card">
+        <span class="feat-icon">3️⃣</span>
+        <div class="feat-title">Gestion des Produits</div>
+        <div class="feat-desc">Catalogue, types de produits, listes de prix et remises</div>
+      </div>
+      <div class="feat-card">
+        <span class="feat-icon">4️⃣</span>
+        <div class="feat-title">Clients & Facturation</div>
+        <div class="feat-desc">Gestion des clients, conditions de paiement et facturation</div>
+      </div>
+      <div class="feat-card">
+        <span class="feat-icon">5️⃣</span>
+        <div class="feat-title">Rapports & Statistiques</div>
+        <div class="feat-desc">Tableaux de bord, analyses des ventes et prévisions</div>
+      </div>
+      <div class="feat-card">
+        <span class="feat-icon">6️⃣</span>
+        <div class="feat-title">Intégrations & Modules Liés</div>
+        <div class="feat-desc">CRM, Inventaire, Comptabilité, eCommerce et plus</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       SLIDE 3 — INTRO INTERFACE
+  ══════════════════════════════════════════ -->
+  <div class="slide" id="slide-3">
+    <div class="slide-tint tint-purple"></div>
+    <p class="section-label fade-up">Chapitre 1</p>
+    <h2 class="slide-title fade-up-d1">Interface du Module Vente</h2>
+    <div style="display:flex;gap:32px;align-items:flex-start;width:100%;max-width:960px;" class="fade-up-d2">
+      <div style="flex:1;">
+        <div class="mock-screen">
+          <div class="mock-topbar">
+            <div class="mock-dots">
+              <div class="mock-dot" style="background:#ff5f57"></div>
+              <div class="mock-dot" style="background:#ffbd2e"></div>
+              <div class="mock-dot" style="background:#28ca41"></div>
+            </div>
+            <div class="mock-url">🔒 odoo.mycompany.com/odoo/sales</div>
+          </div>
+          <div class="mock-body">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+              <span style="font-size:1.1rem;">🛒</span>
+              <span style="font-weight:800;font-size:.95rem;">Ventes</span>
+              <span style="margin-left:auto;background:rgba(113,75,103,.3);padding:3px 10px;border-radius:6px;font-size:.68rem;color:#c084cc;font-weight:600;">17.0</span>
+            </div>
+            <div class="mock-nav">
+              <div class="mock-nav-item active">Commandes</div>
+              <div class="mock-nav-item">À facturer</div>
+              <div class="mock-nav-item">Produits</div>
+              <div class="mock-nav-item">Rapports</div>
+              <div class="mock-nav-item">Configuration</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.04);border-radius:8px;padding:10px;font-size:.7rem;color:rgba(255,255,255,0.4);margin-bottom:10px;display:flex;align-items:center;gap:8px;">
+              <span>🔍</span> Rechercher devis, commandes...
+            </div>
+            <table class="mock-table">
+              <thead><tr>
+                <th>N° Devis</th><th>Client</th><th>Montant</th><th>Statut</th>
+              </tr></thead>
+              <tbody>
+                <tr><td>S00042</td><td>Client Alpha</td><td>4 500 €</td><td><span class="status-badge s-confirmed">Confirmé</span></td></tr>
+                <tr><td>S00041</td><td>Société Beta</td><td>1 280 €</td><td><span class="status-badge s-draft">Devis</span></td></tr>
+                <tr><td>S00040</td><td>Entreprise Gamma</td><td>8 900 €</td><td><span class="status-badge s-done">Livré</span></td></tr>
+                <tr><td>S00039</td><td>Client Delta</td><td>650 €</td><td><span class="status-badge s-cancel">Annulé</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:12px;">
+        <div class="card" style="padding:16px 18px;">
+          <div style="font-size:.75rem;font-weight:700;color:#c084cc;margin-bottom:8px;">📌 Menu Principal</div>
+          <ul class="styled-list" style="font-size:.8rem;">
+            <li><strong>Commandes</strong> — Devis & Bons de commande</li>
+            <li><strong>À Facturer</strong> — Commandes prêtes à facturer</li>
+            <li><strong>Produits</strong> — Catalogue & Listes de prix</li>
+            <li><strong>Rapports</strong> — Analyses & Prévisions</li>
+            <li><strong>Configuration</strong> — Paramètres avancés</li>
+          </ul>
+        </div>
+        <div class="card" style="padding:16px 18px;">
+          <div style="font-size:.75rem;font-weight:700;color:#7dd3fc;margin-bottom:8px;">✨ Nouveautés Odoo 17</div>
+          <ul class="styled-list" style="font-size:.8rem;">
+            <li>Barre de recherche centrée en haut</li>
+            <li>Mode sombre disponible</li>
+            <li>Icônes et menus modernisés</li>
+            <li>Interface PWA (mobile friendly)</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       SLIDE 4 — DEVIS
+  ══════════════════════════════════════════ -->
+  <div class="slide" id="slide-4">
+    <div class="slide-tint tint-green"></div>
+    <p class="section-label fade-up">Chapitre 2</p>
+    <h2 class="slide-title fade-up-d1">Créer un Devis</h2>
+    <p class="slide-subtitle fade-up-d1" style="margin-bottom:24px;">De la création du devis jusqu'à la confirmation de commande</p>
+    <div class="workflow fade-up-d2">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-title">Nouveau Devis</div>
+        <div class="step-desc">Ventes → Commandes → Devis → Nouveau</div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-title">Saisir Client</div>
+        <div class="step-desc">Sélectionner ou créer le client + conditions de paiement</div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-title">Ajouter Produits</div>
+        <div class="step-desc">Catalogue, quantités, prix, remises, taxes</div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-title">Envoyer</div>
+        <div class="step-desc">Par email avec eSignature ou pro forma</div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="step">
+        <div class="step-num">5</div>
+        <div class="step-title">Confirmer</div>
+        <div class="step-desc">Convertir en Bon de Commande confirmé</div>
+      </div>
+    </div>
+    <div class="grid-3 fade-up-d3" style="margin-top:20px;max-width:800px;">
+      <div class="feat-card">
+        <span class="feat-icon">📝</span>
+        <div class="feat-title">Templates de Devis</div>
+        <div class="feat-desc">Réutilisez des modèles personnalisés avec produits prédéfinis</div>
+      </div>
+      <div class="feat-card">
+        <span class="feat-icon">✍️</span>
+        <div class="feat-title">eSignature</div>
+        <div class="feat-desc">Signature électronique intégrée pour approbation rapide</div>
+      </div>
+      <div class="feat-card">
+        <span class="feat-icon">⚠️</span>
+        <div class="feat-title">Alertes Client</div>
+        <div class="feat-desc">Avertissements automatiques pour clients ou produits spécifiques</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       SLIDE 5 — CATALOGUE PRODUITS
+  ══════════════════════════════════════════ -->
+  <div class="slide" id="slide-5">
+    <div class="slide-tint tint-purple"></div>
+    <p class="section-label fade-up">Chapitre 3 — Nouveauté Odoo 17</p>
+    <h2 class="slide-title fade-up-d1">Catalogue & Gestion des Produits</h2>
+    <div style="display:flex;gap:28px;width:100%;max-width:960px;" class="fade-up-d2">
+      <div style="flex:1.2;">
+        <!-- Catalogue mock -->
+        <div class="mock-screen">
+          <div class="mock-topbar">
+            <div class="mock-dots">
+              <div class="mock-dot" style="background:#ff5f57"></div>
+              <div class="mock-dot" style="background:#ffbd2e"></div>
+              <div class="mock-dot" style="background:#28ca41"></div>
+            </div>
+            <div class="mock-url">🔒 Produits → Catalogue</div>
+          </div>
+          <div class="mock-body">
+            <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+              <div class="mock-nav-item active">🗂️ Catalogue</div>
+              <div class="mock-nav-item">📋 Liste</div>
+              <div class="mock-nav-item">📊 Kanban</div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+              <div style="background:rgba(255,255,255,0.06);border-radius:10px;padding:10px;text-align:center;border:1px solid rgba(255,255,255,0.08);">
+                <div style="font-size:1.6rem;margin-bottom:5px;">💻</div>
+                <div style="font-size:.7rem;font-weight:700;">Ordinateur Pro</div>
+                <div style="font-size:.65rem;color:rgba(255,255,255,0.4);margin:2px 0;">Stockable</div>
+                <div style="font-size:.78rem;font-weight:800;color:#c084cc;">1 200 €</div>
+                <div style="margin-top:6px;background:var(--odoo-purple);border-radius:6px;padding:3px 0;font-size:.65rem;font-weight:700;cursor:pointer;">+ Ajouter</div>
+              </div>
+              <div style="background:rgba(255,255,255,0.06);border-radius:10px;padding:10px;text-align:center;border:1px solid rgba(255,255,255,0.08);">
+                <div style="font-size:1.6rem;margin-bottom:5px;">🖨️</div>
+                <div style="font-size:.7rem;font-weight:700;">Imprimante Laser</div>
+                <div style="font-size:.65rem;color:rgba(255,255,255,0.4);margin:2px 0;">Stockable</div>
+                <div style="font-size:.78rem;font-weight:800;color:#c084cc;">350 €</div>
+                <div style="margin-top:6px;background:var(--odoo-purple);border-radius:6px;padding:3px 0;font-size:.65rem;font-weight:700;cursor:pointer;">+ Ajouter</div>
+              </div>
+              <div style="background:rgba(255,255,255,0.06);border-radius:10px;padding:10px;text-align:center;border:1px solid rgba(255,255,255,0.08);">
+                <div style="font-size:1.6rem;margin-bottom:5px;">🔧</div>
+                <div style="font-size:.7rem;font-weight:700;">Maintenance</div>
+                <div style="font-size:.65rem;color:rgba(255,255,255,0.4);margin:2px 0;">Service</div>
+                <div style="font-size:.78rem;font-weight:800;color:#c084cc;">80 €/h</div>
+                <div style="margin-top:6px;background:var(--odoo-purple);border-radius:6px;padding:3px 0;font-size:.65rem;font-weight:700;cursor:pointer;">+ Ajouter</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:12px;">
+        <div class="card" style="padding:16px;">
+          <div style="font-size:.75rem;font-weight:700;color:#c084cc;margin-bottom:10px;">🏷️ Types de Produits Odoo 17</div>
+          <div style="display:flex;flex-direction:column;gap:7px;">
+            <div style="display:flex;align-items:center;gap:8px;font-size:.78rem;"><span class="badge badge-purple">Stockable</span> Géré en inventaire physique</div>
+            <div style="display:flex;align-items:center;gap:8px;font-size:.78rem;"><span class="badge badge-blue">Service</span> Prestations, main d'œuvre</div>
+            <div style="display:flex;align-items:center;gap:8px;font-size:.78rem;"><span class="badge badge-orange">Consommable</span> Non tracé en stock</div>
+            <div style="display:flex;align-items:center;gap:8px;font-size:.78rem;"><span class="badge badge-green">Combo ✨</span> Nouveau Odoo 17 — produit groupé</div>
+          </div>
+        </div>
+        <div class="card" style="padding:16px;">
+          <div style="font-size:.75rem;font-weight:700;color:#7dd3fc;margin-bottom:8px;">💡 Fonctions Clés Produits</div>
+          <ul class="styled-list" style="font-size:.78rem;">
+            <li>Variantes (taille, couleur, etc.)</li>
+            <li>Images, fiches techniques PDF</li>
+            <li>Prix de revient & marges</li>
+            <li>Unités de mesure multiples</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       SLIDE 6 — TARIFICATION
+  ══════════════════════════════════════════ -->
+  <div class="slide" id="slide-6">
+    <div class="slide-tint tint-orange"></div>
+    <p class="section-label fade-up">Chapitre 3 · Tarification</p>
+    <h2 class="slide-title fade-up-d1">Listes de Prix & Remises</h2>
+    <div style="display:flex;gap:24px;width:100%;max-width:960px;" class="fade-up-d2">
+      <div style="flex:1;">
+        <div class="card" style="margin-bottom:14px;">
+          <div style="font-size:.8rem;font-weight:700;color:#fcd34d;margin-bottom:12px;">📋 Liste de Prix — Configuration</div>
+          <table class="info-table">
+            <thead><tr><th>Règle</th><th>Application</th><th>Prix</th></tr></thead>
+            <tbody>
+              <tr><td>Prix public</td><td>Tous clients</td><td>100%</td></tr>
+              <tr><td>Client VIP</td><td>Tag: VIP</td><td>-15%</td></tr>
+              <tr><td>Grossiste</td><td>Qté ≥ 100</td><td>-25%</td></tr>
+              <tr><td>Promo été</td><td>01/06–31/08</td><td>-10%</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout">
+          <strong>⚙️ Activation :</strong> Ventes → Configuration → Paramètres → <em>Activer les Listes de prix</em> sous l'onglet Tarification
+        </div>
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:12px;">
+        <div class="feat-card">
+          <span class="feat-icon">💸</span>
+          <div class="feat-title">Remises & Programmes Fidélité</div>
+          <div class="feat-desc">Remplaçant des anciens bons de réduction Odoo 16 — gestion unifiée des promotions, coupons et programmes de fidélité dans Produits → Remises.</div>
+        </div>
+        <div class="feat-card">
+          <span class="feat-icon">💱</span>
+          <div class="feat-title">Multi-Devises</div>
+          <div class="feat-desc">Mise à jour en temps réel des taux de change. Facturation internationale simplifiée avec conversion automatique.</div>
+        </div>
+        <div class="feat-card">
+          <span class="feat-icon">📦</span>
+          <div class="feat-title">Upsell & Facturation</div>
+          <div class="feat-desc">Odoo détecte automatiquement les écarts devis/livraison pour générer des factures supplémentaires dans "À Facturer".</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       SLIDE 7 — COMMANDES DE VENTE
+  ══════════════════════════════════════════ -->
+  <div class="slide" id="slide-7">
+    <div class="slide-tint tint-blue"></div>
+    <p class="section-label fade-up">Chapitre 2 · Approfondissement</p>
+    <h2 class="slide-title fade-up-d1">Gestion des Commandes de Vente</h2>
+    <div style="display:flex;gap:24px;width:100%;max-width:960px;" class="fade-up-d2">
+      <div style="flex:1.3;">
+        <div class="kanban">
+          <div class="kanban-col">
+            <div class="kanban-header" style="color:#fcd34d;border-color:#fcd34d;">
+              Devis <span class="badge badge-orange">3</span>
+            </div>
+            <div class="kanban-card">
+              <div class="kanban-client">TechCorp SARL</div>
+              <div class="kanban-amount">2 400 € · 3 produits</div>
+            </div>
+            <div class="kanban-card">
+              <div class="kanban-client">StartupXYZ</div>
+              <div class="kanban-amount">800 € · 1 produit</div>
+            </div>
+          </div>
+          <div class="kanban-col">
+            <div class="kanban-header" style="color:#7dd3fc;border-color:#7dd3fc;">
+              Confirmé <span class="badge badge-blue">2</span>
+            </div>
+            <div class="kanban-card">
+              <div class="kanban-client">Groupe Meridian</div>
+              <div class="kanban-amount">12 000 € · 7 produits</div>
+            </div>
+            <div class="kanban-card">
+              <div class="kanban-client">Retail Pro</div>
+              <div class="kanban-amount">3 200 € · 4 produits</div>
+            </div>
+          </div>
+          <div class="kanban-col">
+            <div class="kanban-header" style="color:#6ee7b7;border-color:#6ee7b7;">
+              Livré <span class="badge badge-green">1</span>
+            </div>
+            <div class="kanban-card">
+              <div class="kanban-client">Pharma Plus</div>
+              <div class="kanban-amount">5 600 € · Facturé ✓</div>
+            </div>
+          </div>
+        </div>
+        <p style="font-size:.72rem;color:rgba(255,255,255,0.35);margin-top:10px;text-align:center;">Vue Kanban — Commandes de Vente</p>
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:11px;">
+        <div class="card" style="padding:16px;">
+          <div style="font-size:.78rem;font-weight:700;color:#7dd3fc;margin-bottom:10px;">🔄 Cycle de Vie d'une Commande</div>
+          <ul class="styled-list" style="font-size:.79rem;">
+            <li><strong>Brouillon</strong> → Devis en cours de rédaction</li>
+            <li><strong>Envoyé</strong> → Devis transmis au client</li>
+            <li><strong>Bon de Commande</strong> → Confirmé & lancé</li>
+            <li><strong>À livrer</strong> → Ordre de livraison créé</li>
+            <li><strong>Facturé</strong> → Facture générée & payée</li>
+          </ul>
+        </div>
+        <div class="card" style="padding:16px;">
+          <div style="font-size:.78rem;font-weight:700;color:#c084cc;margin-bottom:10px;">⚡ Actions Rapides</div>
+          <ul class="styled-list" style="font-size:.79rem;">
+            <li>Créer une facture en 1 clic</li>
+            <li>Suivre les livraisons intégrées</li>
+            <li>Envoyer par email / WhatsApp</li>
+            <li>Ajouter une note interne</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       SLIDE 8 — CLIENTS & FACTURATION
+  ══════════════════════════════════════════ -->
+  <div class="slide" id="slide-8">
+    <div class="slide-tint tint-purple"></div>
+    <p class="section-label fade-up">Chapitre 4</p>
+    <h2 class="slide-title fade-up-d1">Clients & Facturation</h2>
+    <div class="grid-2 fade-up-d2" style="max-width:900px;gap:18px;">
+      <div class="card">
+        <div style="font-size:.8rem;font-weight:700;color:#c084cc;margin-bottom:12px;">👤 Fiche Client</div>
+        <table class="info-table" style="font-size:.76rem;">
+          <tbody>
+            <tr><td style="color:rgba(255,255,255,0.5);">Nom</td><td>Société Alpha SARL</td></tr>
+            <tr><td style="color:rgba(255,255,255,0.5);">Type</td><td>Entreprise</td></tr>
+            <tr><td style="color:rgba(255,255,255,0.5);">Devise</td><td>EUR €</td></tr>
+            <tr><td style="color:rgba(255,255,255,0.5);">Paiement</td><td>30 jours net</td></tr>
+            <tr><td style="color:rgba(255,255,255,0.5);">Liste de prix</td><td>Tarif VIP</td></tr>
+            <tr><td style="color:rgba(255,255,255,0.5);">Crédit max</td><td>10 000 €</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div class="feat-card" style="flex:1;">
+          <span class="feat-icon">🧾</span>
+          <div class="feat-title">Facturation Automatique</div>
+          <div class="feat-desc">Générez des factures directement depuis les bons de commande. Plusieurs méthodes : à la commande, à la livraison, ou selon les jalons.</div>
+        </div>
+        <div class="feat-card" style="flex:1;">
+          <span class="feat-icon">💳</span>
+          <div class="feat-title">Paiements en Ligne</div>
+          <div class="feat-desc">Odoo 17 supporte davantage de passerelles : Stripe, PayPal, virement bancaire, paiement à la livraison (COD).</div>
+        </div>
+      </div>
+      <div class="feat-card">
+        <span class="feat-icon">📬</span>
+        <div class="feat-title">Facture Pro Forma</div>
+        <div class="feat-desc">Envoyez une facture pro forma avant validation pour confirmation client. Utile pour les procédures douanières et administratives.</div>
+      </div>
+      <div class="feat-card">
+        <span class="feat-icon">⚠️</span>
+        <div class="feat-title">Limite de Crédit</div>
+        <div class="feat-desc">Alerte automatique quand un client dépasse sa limite de crédit. Repris de la v16 du module Vente dans Odoo 17.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       SLIDE 9 — RAPPORTS
+  ══════════════════════════════════════════ -->
+  <div class="slide" id="slide-9">
+    <div class="slide-tint tint-green"></div>
+    <p class="section-label fade-up">Chapitre 5</p>
+    <h2 class="slide-title fade-up-d1">Rapports & Analyses</h2>
+    <div style="display:flex;gap:24px;width:100%;max-width:960px;" class="fade-up-d2">
+      <div style="flex:1;">
+        <div class="grid-2" style="gap:12px;margin-bottom:16px;">
+          <div class="stat-card">
+            <div class="stat-num">€ 248K</div>
+            <div class="stat-label">CA ce mois</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num">127</div>
+            <div class="stat-label">Commandes confirmées</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num">+18%</div>
+            <div class="stat-label">vs mois précédent</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num">4.2j</div>
+            <div class="stat-label">Délai moyen de devis</div>
+          </div>
+        </div>
+        <div class="callout" style="font-size:.8rem;">
+          <strong>📊 Rapports disponibles :</strong> Ventes → Rapports → Ventes / Activité Commerciale / Prévisions / Pivot / Graphiques
+        </div>
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:12px;">
+        <div class="feat-card">
+          <span class="feat-icon">📈</span>
+          <div class="feat-title">Rapport de Ventes</div>
+          <div class="feat-desc">Analyse par vendeur, client, produit, période. Vue tableau croisé dynamique (pivot) ou graphique en barres/camembert.</div>
+        </div>
+        <div class="feat-card">
+          <span class="feat-icon">🎯</span>
+          <div class="feat-title">Prévisions de Ventes</div>
+          <div class="feat-desc">Estimations basées sur les devis en cours et l'historique. Visualisation du pipeline de revenus futurs.</div>
+        </div>
+        <div class="feat-card">
+          <span class="feat-icon">🏆</span>
+          <div class="feat-title">Activité Commerciale</div>
+          <div class="feat-desc">Suivi des performances par commercial : nombre de devis, taux de conversion, chiffre d'affaires généré.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       SLIDE 10 — INTÉGRATIONS
+  ══════════════════════════════════════════ -->
+  <div class="slide" id="slide-10">
+    <div class="slide-tint tint-blue"></div>
+    <p class="section-label fade-up">Chapitre 6</p>
+    <h2 class="slide-title fade-up-d1">Intégrations & Modules Liés</h2>
+    <p class="slide-subtitle fade-up-d1" style="margin-bottom:20px;">Le module Vente est le cœur qui connecte l'entreprise</p>
+    <div class="grid-4 fade-up-d2" style="margin-bottom:20px;">
+      <div class="int-card">
+        <div class="int-icon">🤝</div>
+        <div class="int-name">CRM</div>
+        <div style="font-size:.65rem;color:rgba(255,255,255,0.4);margin-top:4px;">Pipeline leads → devis</div>
+      </div>
+      <div class="int-card">
+        <div class="int-icon">📦</div>
+        <div class="int-name">Inventaire</div>
+        <div style="font-size:.65rem;color:rgba(255,255,255,0.4);margin-top:4px;">Stock en temps réel</div>
+      </div>
+      <div class="int-card">
+        <div class="int-icon">💰</div>
+        <div class="int-name">Comptabilité</div>
+        <div style="font-size:.65rem;color:rgba(255,255,255,0.4);margin-top:4px;">Factures & paiements</div>
+      </div>
+      <div class="int-card">
+        <div class="int-icon">🛍️</div>
+        <div class="int-name">eCommerce</div>
+        <div style="font-size:.65rem;color:rgba(255,255,255,0.4);margin-top:4px;">Sync boutique en ligne</div>
+      </div>
+      <div class="int-card">
+        <div class="int-icon">🏪</div>
+        <div class="int-name">Point de Vente</div>
+        <div style="font-size:.65rem;color:rgba(255,255,255,0.4);margin-top:4px;">Ventes physiques</div>
+      </div>
+      <div class="int-card">
+        <div class="int-icon">🔧</div>
+        <div class="int-name">Fabrication</div>
+        <div style="font-size:.65rem;color:rgba(255,255,255,0.4);margin-top:4px;">Ordres de fab. liés</div>
+      </div>
+      <div class="int-card">
+        <div class="int-icon">💬</div>
+        <div class="int-name">WhatsApp</div>
+        <div style="font-size:.65rem;color:rgba(255,255,255,0.4);margin-top:4px;">Envoi devis/factures</div>
+      </div>
+      <div class="int-card">
+        <div class="int-icon">🔄</div>
+        <div class="int-name">Abonnements</div>
+        <div style="font-size:.65rem;color:rgba(255,255,255,0.4);margin-top:4px;">Revenus récurrents</div>
+      </div>
+    </div>
+    <div class="callout fade-up-d3" style="max-width:760px;">
+      <strong>💡 Conception modulaire Odoo :</strong> Chaque module partage les mêmes données en temps réel — une commande confirmée déclenche automatiquement la livraison en stock et la facture en comptabilité, sans ressaisie.
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       SLIDE 11 — CONFIGURATION
+  ══════════════════════════════════════════ -->
+  <div class="slide" id="slide-11">
+    <div class="slide-tint tint-orange"></div>
+    <p class="section-label fade-up">Configuration Avancée</p>
+    <h2 class="slide-title fade-up-d1">Paramétrage du Module Vente</h2>
+    <div class="grid-3 fade-up-d2" style="max-width:900px;">
+      <div class="feat-card">
+        <span class="feat-icon">🔒</span>
+        <div class="feat-title">Verrouillage des Commandes</div>
+        <div class="feat-desc">Empêche la modification des commandes confirmées. Accessible dans Configuration → Paramètres → Devis & Commandes.</div>
+      </div>
+      <div class="feat-card">
+        <span class="feat-icon">📅</span>
+        <div class="feat-title">Délai de Validité</div>
+        <div class="feat-desc">Définissez un délai de validité par défaut pour tous les devis. Les clients reçoivent une date d'expiration claire.</div>
+      </div>
+      <div class="feat-card">
+        <span class="feat-icon">👥</span>
+        <div class="feat-title">Équipes de Vente</div>
+        <div class="feat-desc">Organisez vos commerciaux en équipes avec des objectifs, des pipelines et des tableaux de bord séparés.</div>
+      </div>
+      <div class="feat-card">
+        <span class="feat-icon">📧</span>
+        <div class="feat-title">Templates Email</div>
+        <div class="feat-desc">Personnalisez les emails de devis, confirmations et relances avec les données dynamiques du client.</div>
+      </div>
+      <div class="feat-card">
+        <span class="feat-icon">🌐</span>
+        <div class="feat-title">Portail Client</div>
+        <div class="feat-desc">Les clients accèdent à leurs devis/commandes en ligne, peuvent signer et payer sans intervention de l'équipe.</div>
+      </div>
+      <div class="feat-card">
+        <span class="feat-icon">📱</span>
+        <div class="feat-title">Application Mobile</div>
+        <div class="feat-desc">Interface mobile PWA pour créer et suivre les devis depuis n'importe quel appareil, même en déplacement.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       SLIDE 12 — RÉCAP / CONCLUSION
+  ══════════════════════════════════════════ -->
+  <div class="slide" id="slide-12">
+    <div class="slide-tint tint-purple"></div>
+    <p class="section-label fade-up">Récapitulatif</p>
+    <h2 class="slide-title fade-up-d1">Ce que vous avez appris</h2>
+    <div style="display:flex;gap:24px;width:100%;max-width:900px;" class="fade-up-d2">
+      <div style="flex:1;">
+        <div class="card" style="margin-bottom:16px;">
+          <div style="font-size:.8rem;font-weight:700;color:#c084cc;margin-bottom:12px;">✅ Points Clés</div>
+          <ul class="styled-list">
+            <li>Navigation et interface modernisée d'Odoo 17</li>
+            <li>Création de devis et conversion en commandes</li>
+            <li>Gestion du catalogue, types de produits et variantes</li>
+            <li>Listes de prix, remises et programmes fidélité</li>
+            <li>Facturation automatique et paiements en ligne</li>
+            <li>Rapports de ventes et prévisions</li>
+            <li>Intégrations avec CRM, Stock, Comptabilité</li>
+          </ul>
+        </div>
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:14px;">
+        <div class="card" style="padding:20px;">
+          <div style="font-size:.8rem;font-weight:700;color:#7dd3fc;margin-bottom:10px;">🚀 Nouveautés Odoo 17 à retenir</div>
+          <ul class="styled-list" style="font-size:.82rem;">
+            <li><span class="badge badge-green">Nouveau</span> Catalogue produits avec vue icônes</li>
+            <li><span class="badge badge-green">Nouveau</span> Type de produit "Combo"</li>
+            <li><span class="badge badge-purple">Amélioré</span> Barre de recherche centrée</li>
+            <li><span class="badge badge-purple">Amélioré</span> Plus de passerelles de paiement</li>
+            <li><span class="badge badge-blue">Intégration</span> WhatsApp natif</li>
+          </ul>
+        </div>
+        <div style="background:linear-gradient(135deg,rgba(113,75,103,.4),rgba(14,165,233,.3));border-radius:16px;padding:18px;text-align:center;border:1px solid rgba(255,255,255,0.15);">
+          <div style="font-size:1.8rem;margin-bottom:8px;">🎓</div>
+          <div style="font-weight:800;font-size:1rem;">Cours Terminé !</div>
+          <div style="font-size:.78rem;color:rgba(255,255,255,0.55);margin-top:5px;">Module Vente — Odoo 17</div>
+          <div style="margin-top:12px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+            <span class="badge badge-purple">docs.odoo.com</span>
+            <span class="badge badge-blue">e-learning.odoo.com</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /presentation -->
+
+<script>
+  const TOTAL = 12;
+  let current = 1;
+
+  const dotsContainer = document.getElementById('dots');
+  const counter = document.getElementById('slide-counter');
+  const progressBar = document.getElementById('progress-bar');
+
+  // Build dots
+  for (let i = 1; i <= TOTAL; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 1 ? ' active' : '');
+    d.addEventListener('click', () => goTo(i));
+    dotsContainer.appendChild(d);
+  }
+
+  function goTo(n) {
+    const old = document.getElementById('slide-' + current);
+    old.classList.remove('active');
+    old.classList.add('exit');
+    setTimeout(() => old.classList.remove('exit'), 600);
+
+    current = n;
+    const next = document.getElementById('slide-' + current);
+    next.classList.add('active');
+
+    // Update dots
+    document.querySelectorAll('.dot').forEach((d, i) => {
+      d.classList.toggle('active', i + 1 === current);
+    });
+
+    // Update counter
+    counter.textContent = String(current).padStart(2,'0') + ' / ' + String(TOTAL).padStart(2,'0');
+
+    // Update progress
+    progressBar.style.width = (current / TOTAL * 100) + '%';
+  }
+
+  document.getElementById('btn-next').addEventListener('click', () => {
+    if (current < TOTAL) goTo(current + 1);
+  });
+
+  document.getElementById('btn-prev').addEventListener('click', () => {
+    if (current > 1) goTo(current - 1);
+  });
+
+  // Keyboard navigation
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') {
+      e.preventDefault();
+      if (current < TOTAL) goTo(current + 1);
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (current > 1) goTo(current - 1);
+    }
+  });
+
+  // Touch/swipe support
+  let touchStartX = 0;
+  document.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; });
+  document.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    if (dx < -50 && current < TOTAL) goTo(current + 1);
+    if (dx > 50 && current > 1) goTo(current - 1);
+  });
+
+  // Init progress
+  progressBar.style.width = (1 / TOTAL * 100) + '%';
+</script>
+</body>
+</html>
